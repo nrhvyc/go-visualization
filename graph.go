@@ -23,7 +23,7 @@ var graphNodes = []opts.GraphNode{
 }
 
 func main() {
-	CreatGraph()
+	CreateGraph()
 }
 
 func genLinks() []opts.GraphLink {
@@ -116,12 +116,41 @@ func graphNpmDep() *charts.Graph {
 	return graph
 }
 
-func CreatGraph() {
+func graphHeap() *charts.Graph {
+	heapGraph := createHeap()
+
+	graph := charts.NewGraph()
+	graph.SetGlobalOptions(
+		charts.WithTitleOpts(opts.Title{Title: "heap graph"}),
+	)
+	nodes, links := heapGraph.chartGraph()
+
+	// graph.AddSeries("graph", nodes, links,
+	// n :=
+	graph.AddSeries(
+		"graph",
+		nodes,
+		links,
+		charts.WithGraphChartOpts(
+			opts.GraphChart{
+				Layout: "force",
+				Roam:   true,
+				Force: &opts.GraphForce{
+					Repulsion: 100,
+				},
+			},
+		),
+	)
+	return graph
+}
+
+func CreateGraph() {
 	page := components.NewPage()
 	page.AddCharts(
-		graphBase(),
-		graphCircle(),
-		graphNpmDep(),
+		// graphBase(),
+		// graphCircle(),
+		// graphNpmDep(),
+		graphHeap(),
 	)
 
 	f, err := os.Create("html/graph.html")
