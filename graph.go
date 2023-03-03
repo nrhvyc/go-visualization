@@ -117,23 +117,21 @@ func graphNpmDep() *charts.Graph {
 }
 
 func graphHeap() *charts.Graph {
-	heapGraph := createHeap()
+	nodes, links := createHeap()
 
 	graph := charts.NewGraph()
 	graph.SetGlobalOptions(
-		charts.WithTitleOpts(opts.Title{Title: "heap graph"}),
+		charts.WithTitleOpts(opts.Title{Title: "heap tree"}),
 	)
-	nodes, links := heapGraph.chartGraph()
 
-	// graph.AddSeries("graph", nodes, links,
-	// n :=
 	graph.AddSeries(
 		"graph",
 		nodes,
 		links,
 		charts.WithGraphChartOpts(
 			opts.GraphChart{
-				Layout: "force",
+				// Layout: "force",
+				Layout: "none",
 				Roam:   true,
 				Force: &opts.GraphForce{
 					Repulsion: 100,
