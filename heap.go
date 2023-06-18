@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/go-echarts/go-echarts/v2/opts"
+	spatialmap "github.com/nrhvyc/go-visualization/spatial_map"
 )
 
 type minIntHeapNode struct {
@@ -57,25 +58,25 @@ type nodeType interface {
 	*minIntHeapNode
 }
 
-type direction int
+// type direction int
 
-const (
-	_ direction = iota
-	directionLeft
-	directionRight
-)
+// const (
+// 	_ direction = iota
+// 	directionLeft
+// 	directionRight
+// )
 
-func (d direction) String() string {
-	return [3]string{"", "left", "right"}[d]
-}
+// func (d direction) String() string {
+// 	return [3]string{"", "left", "right"}[d]
+// }
 
-type treeNode[T nodeType] struct {
-	depth           int
-	x, y            int
-	node            T
-	parent          *treeNode[T]
-	parentDirection direction
-}
+// type treeNode[T nodeType] struct {
+// 	depth           int
+// 	x, y            int
+// 	node            T
+// 	parent          *treeNode[T]
+// 	parentDirection direction
+// }
 
 // type tree struct {
 // 	nodes []*treeNode[*minIntHeapNode]
@@ -99,7 +100,7 @@ func (s *stack[T]) Push(n stackNode[T]) {
 func (s *stack[T]) Pop() (node stackNode[T]) {
 	topIndex := len(*s) - 1
 	top := (*s)[topIndex]
-	*s = (*s)[:topIndex]
+	*s = (*s)[:topIndex] // remove top
 	return top
 }
 
@@ -121,12 +122,13 @@ func buildGraphFromHeap(h *intHeap) (nodes []opts.GraphNode, links []opts.GraphL
 	}
 
 	nodes = make([]opts.GraphNode, h.Len())
+	spatialMap := spatialmap.NewSpatialMap[opts.GraphNode](1)
 
 	// depth first search
 	for !nodeStack.IsEmpty() {
 		node := nodeStack.Pop()
 
-		nodes[node.index] = opts.GraphNode{
+		graphNode := opts.GraphNode{
 			Value: float32(node.node.value),
 			Name:  strconv.Itoa(node.node.value),
 			ItemStyle: &opts.ItemStyle{
@@ -136,6 +138,14 @@ func buildGraphFromHeap(h *intHeap) (nodes []opts.GraphNode, links []opts.GraphL
 			X:          float32(node.xOffset*10 + widthOffset),
 			Y:          float32(node.depth*10 + heightOffset),
 		}
+		// Offset the node if one already occupies the coordinate
+		overlapGraphNodes := spatialMap.Get(int(graphNode.X), int(graphNode.Y))
+		if len(overlapGraphNodes) > 0 {
+			graphNode.X += 10
+		}
+
+		nodes[node.index] = graphNode
+		spatialMap.Add(int(graphNode.X), int(graphNode.Y), &graphNode)
 
 		rightChildIndex := node.index*2 + 2
 		if rightChildIndex < h.Len() {
@@ -168,123 +178,3 @@ func buildGraphFromHeap(h *intHeap) (nodes []opts.GraphNode, links []opts.GraphL
 
 	return
 }
-
-// func buildTreeFromHeap(h *intHeap) *tree {
-// 	g := &tree{
-// 		nodes: make([]*treeNode[*minIntHeapNode], h.Len()),
-// 		edges: make([][]int, h.Len()-1), // max amount of edges
-// 		// edges: [][]int{}, // max amount of edges
-// 	}
-// 	// initialize the nodes
-// 	for k := range g.nodes {
-// 		g.nodes[k] = &treeNode[*minIntHeapNode]{}
-// 	}
-
-// 	depth := 0
-// 	const heightCoefficient int = 20
-// 	const widthCoefficient int = 20
-
-// 	const branchingFactor = 2                            // for a binary tree this is 2; likely will be a variable later
-// 	nextLevel := branchingFactor*depth + branchingFactor // index at which the next depth has been reached
-
-// 	for i := 0; i < h.Len(); i++ {
-// 		if i > nextLevel {
-// 			depth++
-// 			nextLevel = branchingFactor*depth + branchingFactor
-// 			fmt.Printf("setting depth to %d", depth)
-// 		} else if i == 1 {
-// 			depth = 1
-// 		}
-
-// 		// Add node to the tree
-// 		g.nodes[i].depth = depth
-// 		g.nodes[i].y = depth * heightCoefficient
-// 		g.nodes[i].node = &(*h)[i]
-
-// 		// Add edges for the node to the tree
-// 		leftChildIndex := 2*i + 1
-// 		if leftChildIndex < h.Len() {
-// 			if g.edges[i] == nil {
-// 				g.edges[i] = []int{}
-// 			}
-// 			g.nodes[leftChildIndex].parent = g.nodes[i]
-// 			g.nodes[leftChildIndex].parentDirection = directionRight
-// 			g.edges[i] = append(g.edges[i], leftChildIndex)
-// 			// g.nodes[leftChildIndex].x = -1*widthCoefficient - g.nodes[i].x //*g.nodes[i].depth
-// 			if g.nodes[i].parent != nil {
-// 				g.nodes[leftChildIndex].x = -1*widthCoefficient - g.nodes[i].parent.x //*g.nodes[i].depth
-// 			} else {
-// 				g.nodes[leftChildIndex].x = -1 * widthCoefficient
-// 			}
-// 		}
-
-// 		rightChildIndex := 2*i + 2
-// 		if rightChildIndex < h.Len() {
-// 			if g.edges[i] == nil {
-// 				g.edges[i] = []int{}
-// 			}
-// 			g.nodes[leftChildIndex].parentDirection = directionLeft
-// 			g.nodes[rightChildIndex].parent = g.nodes[i]
-// 			g.edges[i] = append(g.edges[i], rightChildIndex)
-// 			if g.nodes[i].parent != nil {
-// 				g.nodes[rightChildIndex].x = widthCoefficient + g.nodes[i].parent.x //*g.nodes[i].depth
-// 			} else {
-// 				g.nodes[rightChildIndex].x = widthCoefficient
-// 			}
-// 		}
-// 	}
-
-// 	// for i := range g.nodes {
-// 	// 	g.nodes[i].
-// 	// }
-
-// 	return g
-// }
-
-// func chartTree() (nodes []opts.GraphNode, links []opts.GraphLink) {
-// 	nodes = make([]opts.GraphNode, len(g.nodes))
-
-// 	const heightOffset int = 200
-// 	const widthOffset int = 200
-
-// 	// for i, node := range g.nodes {
-// 	for i, treeNode := range g.nodes {
-// 		nodes[i] = opts.GraphNode{
-// 			Value: float32(treeNode.node.value),
-// 			Name:  strconv.Itoa(treeNode.node.value),
-// 			ItemStyle: &opts.ItemStyle{
-// 				Color: fmt.Sprintf("%x", treeNode.node.value),
-// 			},
-// 			SymbolSize: 20,
-// 			X:          float32(treeNode.x + widthOffset),
-// 			Y:          float32(treeNode.y + heightOffset),
-// 		}
-// 	}
-
-// 	for source, targets := range g.edges {
-// 		for _, target := range targets {
-// 			links = append(links, opts.GraphLink{
-// 				Source: source,
-// 				Target: target,
-// 				Label: &opts.EdgeLabel{
-// 					Show:     true,
-// 					Position: "middle",
-// 					Formatter: fmt.Sprintf(
-// 						"from: %d -> to: %d\nfrom id: %d-> to id: %d\nparent: %s x: %d",
-// 						// "from: %+v -> to: %+v",
-// 						g.nodes[source].x, g.nodes[target].x,
-// 						source, target,
-// 						g.nodes[target].parent.parentDirection.String(), g.nodes[target].parent.x),
-// 					// Formatter: fmt.Sprintf(
-// 					// 	"from: %.f -> to: %.f",
-// 					// 	nodes[source].X, nodes[target].Y),
-// 					// Formatter: fmt.Sprintf(
-// 					// 	"from: %d -> to: %d\ntarget.x: %.f, target.y:%.f",
-// 					// 	source, target, nodes[target].X, nodes[target].Y),
-// 				},
-// 			})
-// 		}
-// 	}
-
-// 	return nodes, links
-// }
