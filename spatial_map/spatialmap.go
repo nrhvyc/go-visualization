@@ -2,7 +2,7 @@ package spatialmap
 
 import "math"
 
-// For a possibly for scalable solution, reference:
+// For a possibly more scalable solution, reference:
 // https://carmencincotti.com/2022-10-31/spatial-hash-maps-part-one/#what-is-a-spatial-hash-table
 
 type SpatialMap[T any] struct {
